@@ -1,4 +1,4 @@
-from loguru import logger
+from loggerex import logger
 import sys
 
 def get_logger(name: str = "", level: str = "INFO"):
