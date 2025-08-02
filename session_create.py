@@ -1,5 +1,5 @@
 from pyrogram import Client
-from helper import get_logger
+# from helper import get_logger
 
 # Если данные значения не работают, то вы можете сами создать API отсюда https://my.telegram.org/auth
 api_id = 28405970
@@ -9,7 +9,7 @@ api_hash = "078481a5bf79e1deb7cca2bc63792164"
 name_session = "account1"
 
 app = Client(
-    "account1",
+    name_session,
     api_id=api_id,
     api_hash=api_hash,
     device_model="iPhone 14 Pro",
@@ -21,4 +21,5 @@ app = Client(
     skip_updates=False
 )
 
-app.run()
+with app:
+    print("Session Created")
