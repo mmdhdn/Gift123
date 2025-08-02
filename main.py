@@ -64,6 +64,7 @@ class GiftFlashBuyer:
             for i, session in enumerate(session_list):
                 await session.start()
                 self.checker_logger.info(f"Started session: {sessions_for_checking[i]}")
+            head_logger.info("Started program")
             old_gifts = await session_list[0].get_available_gifts()   # получения списка подарков для сравнения и обнаружения новых
             if not is_test_mode:
                 old_gifts = {i.id for i in old_gifts if i.is_limited}  # создание множество лимитированных подарков для сравнения
@@ -89,7 +90,6 @@ class GiftFlashBuyer:
 if __name__ == "__main__":
     head_logger = get_logger("Head")
 
-    head_logger.info("Started program")
     while True:
         head_logger.info("Do check")
         try:
