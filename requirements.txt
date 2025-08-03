@@ -1,3 +1,5 @@
 toml
 Kurigram==2.2.6
 https://github.com/user-attachments/files/21559328/loggerex-0.7.7.tar.gz
+orjson
+pendulum
