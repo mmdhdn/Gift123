@@ -27,11 +27,11 @@ cd GiftFlashBuyer
 ```
 Либо загрузите вручную и распакуйте архив
 
-![[IMG-20250803232557515.png]]
+![img.png](img/save_zip.png)
 
 Распакованный архив должен выглядеть следующим образом
 
-![[IMG-20250803232915647.png]]
+![img.png](img/dir_with_gift_buyer.png)
 
 **1. Установите Python, если он не установлен
 
@@ -41,7 +41,7 @@ cd GiftFlashBuyer
 
 Откройте командную строку
 
-![[IMG-20250803232656376.png]]
+![img.png](img/open_cmd.png)
 
 Перейдите в директорию с распакованным архивом и введите команду для установки зависимостей
 
@@ -50,31 +50,31 @@ cd GiftFlashBuyer
 pip install -r requirements.txt
 ```
 
-![[IMG-20250803232712994.png]]
+![img.png](img/cmd_pip.png)
 
 **2. Создайте сессии для ваших аккаунтов:**
 - В файле `session_create.py` впишите имя сессии для аккаунта (например, `name_session = "account1"`)
 
-![[IMG-20250803233550006.png]]
+![img.png](img/session_create_file.png)
 
 - Запустите `python.exe ./session_create.py`
 
-![[IMG-20250803233823620.png]]
+![img.png](img/session_create.png)
 
 - Авторизуйтесь по номеру телефона
 
-![[IMG-20250803234357068.png]]
+![img.png](img/login.png)
 
 - Повторите для всех используемых аккаунтов (с разными именами сессий в файле session_create.py)
 
 Таким образом создадутся файлы сессий `.session` локально, которые далее будут использоваться скриптом покупки
 
-![[IMG-20250803234517960.png]]
+![img.png](img/created_session.png)
 
 **3. Настройте скрипт:**
 - Откройте `config.toml`
 
-![[IMG-20250803234642115.png]]
+![img.png](img/config_toml.png)
 
 - Укажите имена сессий для проверки новых подарков, например
 ```toml
@@ -139,8 +139,7 @@ price_range = ["30001", "inf"]
 python.exe ./main.py
 ```
 
-![[IMG-20250803235309580.png]]
-
+![img.png](img/run_main.png)
 
 ![img.png](img/img_debug.png)
 
