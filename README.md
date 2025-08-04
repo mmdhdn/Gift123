@@ -82,7 +82,7 @@ pip install -r requirements.txt
 - Укажите имена сессий для проверки новых подарков, например
 ```toml
 # Аккаунты для проверки выхода новых подарков
-sessions_for_checking = ["account1"]
+sessions_for_checking = ["account1","account2",...]
 ```
 
 - Снова укажите имя сессии (аккаунта который будет покупать) в session_name_send_from, а также username пользователя, которому будет отправлен подарок в username_send_to. То есть: от какого аккаунта (session_name_send_from) → какому пользователю (username_send_to) мы отправляем подарок. Таких блоков настроек может быть несколько.
