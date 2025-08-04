@@ -6,7 +6,7 @@ sleep_send_seconds = 0.2        # Задержка между запросами
 sleep_checking_seconds = 1      # Задержка между циклами проверки новых подарков
 
 # Режимы
-is_test_mode = true             # Режим, чтобы протестировать работу, программа будет думать, как будто имеется 2 доступных подарка для покупки
+is_test_mode = false             # Режим, чтобы протестировать работу, программа будет думать, как будто имеется 2 доступных подарка для покупки
 is_infinite_buying = true       # В данном режмие после покупки программа продолжит проверять новые подарки и закупать
 
 # Конфигурация отправки подарков
@@ -18,43 +18,11 @@ username_send_to = "@someuser1"     # Получатель подарков
 #session_name_send_from = "account2"
 #username_send_to = "@someuser2"
 
-# Фильтры подарков (все значения как строки)
+# Фильтры подарков (по умолчанию будет покупать все лимитированные подарки)
 [[gift_filters]]
-supply_range = ["0", "1000"]        # Диапозон сапплая: [От, До]
-price_range = ["30001", "inf"]      # Диапозон цены:    [От, До]
+supply_range = ["0", "inf"]        # Диапозон сапплая: [От, До]
+price_range = ["0", "inf"]      # Диапозон цены:    [От, До]
 
-[[gift_filters]]
-supply_range = ["1001", "3000"]
-price_range = ["30001", "inf"]
-
-[[gift_filters]]
-supply_range = ["3001", "5000"]
-price_range = ["25001", "inf"]
-
-[[gift_filters]]
-supply_range = ["5001", "10000"]
-price_range = ["20001", "inf"]
-
-[[gift_filters]]
-supply_range = ["10001", "20000"]
-price_range = ["15001", "inf"]
-
-[[gift_filters]]
-supply_range = ["20001", "50000"]
-price_range = ["10001", "inf"]
-
-[[gift_filters]]
-supply_range = ["50001", "100000"]
-price_range = ["5001", "inf"]
-
-[[gift_filters]]
-supply_range = ["100001", "200000"]
-price_range = ["1001", "inf"]
-
-[[gift_filters]]
-supply_range = ["200001", "300000"]
-price_range = ["501", "inf"]
-
-[[gift_filters]]
-supply_range = ["300001", "inf"]
-price_range = ["201", "inf"]
+# [[gift_filters]]
+# supply_range = ["1001", "3000"]
+# price_range = ["30001", "inf"]
