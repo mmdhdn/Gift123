@@ -29,7 +29,7 @@ class GiftFlashBuyer:
         async with Client(config.session_name_send_from) as app:  # запускаем основной аккаунт
             balance = await app.get_stars_balance()
             for gift in self.new_gifts:  # цикл по всем подаркам начиная с самого маленького саплая
-                if any(
+                if not any(
                         f.supply_range[0] <= gift['total'] <= f.supply_range[1] and
                         f.price_range[0] <= gift['price'] <= f.price_range[1]
                         for f in gift_filters
@@ -38,7 +38,7 @@ class GiftFlashBuyer:
 
                 count_gifts = balance // gift['price']  # считаем сколько подарков можем купить
                 if not count_gifts:  # переходим к следующему если не хватает баланса
-                    # acc_logger.exception(f"Not enough stars balance {balance} to buy gift-{gift['id']} for price {gift['price']} stars")
+                    acc_logger.exception(f"Not enough stars balance {balance} to buy gift-{gift['id']} for price {gift['price']} stars")
                     continue
 
                 acc_logger.exception(f"Trying to buy gift-{gift['id']} for price {gift['price']} stars")
