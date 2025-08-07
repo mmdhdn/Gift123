@@ -1,6 +1,6 @@
 toml
 Kurigram==2.2.6
 https://github.com/theskumar/python-dotenv/archive/refs/tags/v1.1.1.tar.gz
-https://github.com/user-attachments/files/21602563/loggerex-0.7.9.tar.gz
+loggerex @ https://github.com/Gurb00z/loggerex/archive/refs/tags/v0.8.0.tar.gz
 pendulum
 https://github.com/spyoungtech/json-five/releases/download/v1.1.2/json_five-1.1.2.tar.gz
