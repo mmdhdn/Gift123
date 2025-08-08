@@ -88,7 +88,7 @@ class GiftFlashBuyer:
                 await asyncio.sleep(wait_time)
             except Exception as e:
                 buyer_logger.exception("Unexcepted exception", exc_info=True)
-                break
+                await asyncio.sleep(0.3)
 
         buyer_logger.info(f"[{session.name} --> {send_to}] done")
 

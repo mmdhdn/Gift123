@@ -65,8 +65,8 @@ class Sessions:
         try:
             await session.start()
             session.balance_available = await session.cli.get_stars_balance()
-            # if config.is_test_mode:
-            #     session.balance_available = min(config.test_mode_max_balance, session.balance_available)
+            if config.is_test_mode:
+                session.balance_available = min(config.test_mode_max_balance, session.balance_available)
 
             me = await session.cli.get_me()
             logger.info(f"Started session: {session.name}, balance: {session.balance_available}, name: {me.first_name} {me.last_name}, username: {me.username}")
