@@ -96,7 +96,7 @@ if __name__ == "__main__":
     head_logger = get_logger("Head")
 
     while True:
-        head_logger.info("Do check")
+        head_logger.info("Do checking")
         try:
             gift_flash_buyer = GiftFlashBuyer()
             asyncio.run(gift_flash_buyer.main())
