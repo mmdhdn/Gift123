@@ -1,102 +1,139 @@
 import asyncio
+import random
 import time
 
+import pyrogram
 from pyrogram import Client
-from pyrogram.errors import StargiftUsageLimited
+from pyrogram.errors import StargiftUsageLimited, FormSubmitDuplicate, FloodWait
 
 from config import sleep_send_seconds, sleep_checking_seconds, sessions_for_checking, send_config, is_test_mode, gift_filters, is_infinite_buying
 from helper import get_logger
-from model import SendFromTo
+from model import SendFromTo, Sessions, Session, SessionType, GiftsCache
+from task_manager import TaskManager
+
 
 class GiftFlashBuyer:
     def __init__(self):
-        self.checker_logger = get_logger("Checker")
+        self.main_logger = get_logger("Main")
+        self.account_starter_logger = get_logger("AccStarter")
         self.new_gifts = None
+        self.task_manager_checker = TaskManager()
+        self.gift_cache = GiftsCache()
 
-    async def check_new_gifts(self, session_list, len_old):
+        self.sessions: Sessions = Sessions()
+
+    async def account_starter(self):
+        self.account_starter_logger.info(f"Starting checker sessions")
+        for session in sessions_for_checking:
+            is_sucessesfully_started = await self.sessions.add_session(
+                session_name_file=session,
+                is_checker=True,
+                logger=self.account_starter_logger
+            )
+
+        self.account_starter_logger.info(f"Starting buyer sessions")
+        for config in send_config:
+            is_sucessesfully_started = await self.sessions.add_session(
+                session_name_file=config.session_name_send_from,
+                is_buying=True,
+                logger=self.account_starter_logger
+            )
+
+    async def check_gifts_from_session(self, session: Session):
+        checker_logger = get_logger(f"Checker-{session.name}")
+        checker_logger.info(f"Started checking")
+
         while True:
-            for session in session_list:
-                data_gifts = await session.get_available_gifts()    # чекаем новые подарки
-                self.checker_logger.info(f"Checked")
-                if not is_test_mode:
-                    gifts_limit = [i.id for i in data_gifts if i.is_limited]   # создание списка лимитированных подарков для сравнения
-                else:
-                    gifts_limit = [i.id for i in data_gifts]
-                if len(gifts_limit) > len_old:   # если появились новые подарки
-                    return data_gifts
+            available_gifts = await session.cli.get_available_gifts()    # чекаем новые подарки
+            self.gift_cache.init_cache(available_gifts)
+
+            new_gifts_available = self.gift_cache.get_new_gifts_available(available_gifts)
+            if new_gifts_available:
+                log_message = "Available new gifts:\n"
+                for gift in new_gifts_available:
+                    log_message += GiftsCache.log_gift_string(gift)
+                checker_logger.info(log_message.strip())
+                checker_logger.info("Stopping checker")
+                raise StopAsyncIteration
+
+            checker_logger.info(f"Checked")
             await asyncio.sleep(sleep_checking_seconds)
 
-    async def buy_gifts(self, config: SendFromTo):
-        acc_logger = get_logger(config.session_name_send_from)
+    async def buy_gift(self, session: Session, gift: pyrogram.types.Gift):
+        buyer_logger = get_logger(f"Buyer-{session.name}")
 
-        async with Client(config.session_name_send_from) as app:  # запускаем основной аккаунт
-            balance = await app.get_stars_balance()
-            for gift in self.new_gifts:  # цикл по всем подаркам начиная с самого маленького саплая
-                if not any(
-                        f.supply_range[0] <= gift['total'] <= f.supply_range[1] and
-                        f.price_range[0] <= gift['price'] <= f.price_range[1]
-                        for f in gift_filters
-                ):
-                    continue
+        buyer_logger.info(f"Trying to buy gift {GiftsCache.log_gift_string(gift)}")
 
-                count_gifts = balance // gift['price']  # считаем сколько подарков можем купить
-                if not count_gifts:  # переходим к следующему если не хватает баланса
-                    acc_logger.exception(f"Not enough stars balance {balance} to buy gift-{gift['id']} for price {gift['price']} stars")
-                    continue
+        send_to = None
+        for config in send_config:
+            if session.name == config.session_name_send_from:
+                send_to = config.username_send_to
 
-                acc_logger.exception(f"Trying to buy gift-{gift['id']} for price {gift['price']} stars")
-                for _ in range(count_gifts):
-                    try:
-                        await app.send_gift(config.username_send_to, gift['id'], is_private=True)
-                        await asyncio.sleep(sleep_send_seconds)
-                        acc_logger.exception(f"Gift gift-{gift['id']} was buyed sucessfully")
-                    except StargiftUsageLimited:
-                        acc_logger.exception(f"Oops, [{config.session_name_send_from} --> {config.username_send_to}] gift with price {gift['price']}: StargiftUsageLimited'", exc_info=True)
-                        break  # если кончился саплай переходим к следующему подарку
-                    except Exception as e:
-                        acc_logger.exception("Unexcepted exception", exc_info=True)
+        attempts = 0
+        max_attempts = 30
+        while attempts < max_attempts:
+            try:
+                await session.cli.send_gift(send_to, gift.id, is_private=True, text="gift from @kod4dusha")
+                buyer_logger.info(f"Gift {GiftsCache.log_gift_string(gift)} was buyed sucessfully")
+                break
+            except StargiftUsageLimited:
+                buyer_logger.exception(f"Oops, [{session.name} --> {send_to}] {GiftsCache.log_gift_string(gift)}: StargiftUsageLimited'", exc_info=True)
+                break
+            except FloodWait as e:
+                buyer_logger.exception(f"FloodWait Error, waiting for {e.value}sec", exc_info=True)
+                await asyncio.sleep(e.value)
+            except FormSubmitDuplicate:
+                wait_time = 0.3
+                buyer_logger.exception(f"FormSubmitDuplicate Error, waiting for {wait_time}sec", exc_info=True)
+                await asyncio.sleep(wait_time)
+            except Exception as e:
+                buyer_logger.exception("Unexcepted exception", exc_info=True)
+                break
 
-                balance = await app.get_stars_balance()
-
-            acc_logger.info(f"[{config.session_name_send_from} --> {config.username_send_to}] done")
+        buyer_logger.info(f"[{session.name} --> {send_to}] done")
 
     async def main(self):
-        session_list = [Client(session) for session in sessions_for_checking]
-        self.checker_logger.info(f"Available sessions: {len(session_list)}")
-        try:
-            for i, session in enumerate(session_list):
-                await session.start()
-                self.checker_logger.info(f"Started session: {sessions_for_checking[i]}")
-            head_logger.info("Started program")
-            old_gifts = await session_list[0].get_available_gifts()   # получения списка подарков для сравнения и обнаружения новых
-            if not is_test_mode:
-                old_gifts = {i.id for i in old_gifts if i.is_limited}  # создание множество лимитированных подарков для сравнения
-            else:
-                old_gifts = {i.id for i in old_gifts[2:]}  # test cache, 2 gifts
-            self.checker_logger.info(f"Old limited gifts count (Cache): {len(old_gifts)}")
-            self.checker_logger.info(f"Checking new gifts")
-            data_gifts = await self.check_new_gifts(session_list, len(old_gifts))
-        finally:
-            for session in session_list:
-                await session.stop()
+        await self.account_starter()
 
-        if not is_test_mode:
-            gifts_limit_dict = {gift.id: gift for gift in data_gifts if gift.is_limited}    # создания словаря из подарков для обращения к подарку по id
-        else:
-            gifts_limit_dict = {gift.id: gift for gift in data_gifts}
-        self.new_gifts = [gifts_limit_dict[gift_id] for gift_id in gifts_limit_dict.keys() if gift_id not in old_gifts]     # отбираем новые подарки по id
-        self.new_gifts = [{"id": gift.id, "total": gift.total_amount or 0, "price": gift.price} for gift in self.new_gifts]    # получаем саплай и цену для сортировки
-        self.new_gifts = sorted(self.new_gifts, key= lambda x:x['total'])   # сортируем по саплаю
-        self.checker_logger.info(f"Found new {len(self.new_gifts)} gifts!")
+        self.main_logger.info("Started program")
 
-        # запускаем все аккаунты на покупку
-        await asyncio.gather(*[self.buy_gifts(config) for config in send_config])
+        self.main_logger.info("Checking gifts")
+        await self.task_manager_checker.run([self.check_gifts_from_session(session) for session in self.sessions.checker_sessions])
+        self.main_logger.info("Stoped checking gifts")
+
+        if not self.gift_cache.new_gifts_available:
+            self.main_logger.info("No new gifts availbale, stopping main")
+            return
+
+        self.main_logger.info("Сreating buying tasks")
+        tasks_buy = []
+        for session in self.sessions.buyer_sessions:
+            while session.balance_available:
+                start_balance = session.balance_available
+
+                for gift in self.gift_cache.new_gifts_available:
+                    if session.balance_available >= gift.price:
+                        tasks_buy.append(self.buy_gift(session, gift))
+                        self.main_logger.info(f"Account: {session.name}, buy {GiftsCache.log_gift_string(gift)}")
+                        session.balance_available -= gift.price
+                    else:
+                        self.main_logger.warning(f"Not enough stars balance {session.balance_available} to buy {GiftsCache.log_gift_string(gift)}")
+                        continue
+
+                if session.balance_available == start_balance:
+                    break
+
+        self.main_logger.info("Starting tasks")
+        await self.task_manager_checker.run(tasks_buy)
+        self.main_logger.info("Done tasks")
+
+        await self.sessions.stop_all()
 
 if __name__ == "__main__":
     head_logger = get_logger("Head")
 
     while True:
-        head_logger.info("Do checking")
+        head_logger.info("Started")
         try:
             gift_flash_buyer = GiftFlashBuyer()
             asyncio.run(gift_flash_buyer.main())

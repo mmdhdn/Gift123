@@ -11,6 +11,7 @@ send_config = [SendFromTo(**item) for item in config["send_config"]]
 sleep_send_seconds = config["sleep_send_seconds"]
 sleep_checking_seconds = config["sleep_checking_seconds"]
 is_test_mode = config["is_test_mode"]
+test_mode_max_balance = config["test_mode_max_balance"]
 is_infinite_buying = config["is_infinite_buying"]
 
 # Обрабатываем gift_filters с преобразованием 'inf' в float('inf')
