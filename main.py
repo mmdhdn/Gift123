@@ -144,5 +144,8 @@ if __name__ == "__main__":
         if not is_infinite_buying:
             break
 
+        if is_test_mode:
+            break
+
     head_logger.info("Program end")
     time.sleep(100000)
