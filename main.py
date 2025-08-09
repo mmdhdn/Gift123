@@ -6,7 +6,7 @@ import pyrogram
 from pyrogram import Client
 from pyrogram.errors import StargiftUsageLimited, FormSubmitDuplicate, FloodWait
 
-from config import sleep_send_seconds, sleep_checking_seconds, sessions_for_checking, send_config, is_test_mode, gift_filters, is_infinite_buying
+from config import sleep_checking_seconds, sessions_for_checking, send_config, is_test_mode, gift_filters, is_infinite_buying
 from helper import get_logger
 from model import SendFromTo, Sessions, Session, SessionType, GiftsCache
 from task_manager import TaskManager
