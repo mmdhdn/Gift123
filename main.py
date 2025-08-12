@@ -11,33 +11,31 @@ from helper import get_logger
 from model import SendFromTo, Sessions, Session, SessionType, GiftsCache
 from task_manager import TaskManager
 
+sessions: Sessions = Sessions()
+async def account_starter():
+    account_starter_logger = get_logger("AccStarter")
+    account_starter_logger.info(f"Starting checker sessions")
+    for session in sessions_for_checking:
+        is_sucessesfully_started = await sessions.add_session(
+            session_name_file=session,
+            is_checker=True,
+            logger=account_starter_logger
+        )
+
+    account_starter_logger.info(f"Starting buyer sessions")
+    for config in send_config:
+        is_sucessesfully_started = await sessions.add_session(
+            session_name_file=config.session_name_send_from,
+            is_buying=True,
+            logger=account_starter_logger
+        )
 
 class GiftFlashBuyer:
     def __init__(self):
         self.main_logger = get_logger("Main")
-        self.account_starter_logger = get_logger("AccStarter")
         self.new_gifts = None
         self.task_manager_checker = TaskManager()
         self.gift_cache = GiftsCache()
-
-        self.sessions: Sessions = Sessions()
-
-    async def account_starter(self):
-        self.account_starter_logger.info(f"Starting checker sessions")
-        for session in sessions_for_checking:
-            is_sucessesfully_started = await self.sessions.add_session(
-                session_name_file=session,
-                is_checker=True,
-                logger=self.account_starter_logger
-            )
-
-        self.account_starter_logger.info(f"Starting buyer sessions")
-        for config in send_config:
-            is_sucessesfully_started = await self.sessions.add_session(
-                session_name_file=config.session_name_send_from,
-                is_buying=True,
-                logger=self.account_starter_logger
-            )
 
     async def check_gifts_from_session(self, session: Session):
         checker_logger = get_logger(f"Checker-{session.name}")
@@ -93,12 +91,10 @@ class GiftFlashBuyer:
         buyer_logger.info(f"[{session.name} --> {send_to}] done")
 
     async def main(self):
-        await self.account_starter()
-
         self.main_logger.info("Started program")
 
         self.main_logger.info("Checking gifts")
-        await self.task_manager_checker.run([self.check_gifts_from_session(session) for session in self.sessions.checker_sessions])
+        await self.task_manager_checker.run([self.check_gifts_from_session(session) for session in sessions.checker_sessions])
         self.main_logger.info("Stoped checking gifts")
 
         if not self.gift_cache.new_gifts_available:
@@ -107,7 +103,7 @@ class GiftFlashBuyer:
 
         self.main_logger.info("Сreating buying tasks")
         tasks_buy = []
-        for session in self.sessions.buyer_sessions:
+        for session in sessions.buyer_sessions:
             while session.balance_available:
                 start_balance = session.balance_available
 
@@ -127,16 +123,16 @@ class GiftFlashBuyer:
         await self.task_manager_checker.run(tasks_buy)
         self.main_logger.info("Done tasks")
 
-        await self.sessions.stop_all()
-
-if __name__ == "__main__":
+async def loop_infinite():
     head_logger = get_logger("Head")
+
+    await account_starter()
 
     while True:
         head_logger.info("Started")
         try:
             gift_flash_buyer = GiftFlashBuyer()
-            asyncio.run(gift_flash_buyer.main())
+            await gift_flash_buyer.main()
         except Exception as e:
             head_logger.exception(e)
             break
@@ -149,3 +145,6 @@ if __name__ == "__main__":
 
     head_logger.info("Program end")
     time.sleep(100000)
+
+if __name__ == "__main__":
+    asyncio.run(loop_infinite())
