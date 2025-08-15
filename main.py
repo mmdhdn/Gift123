@@ -12,23 +12,68 @@ from model import SendFromTo, Sessions, Session, SessionType, GiftsCache
 from task_manager import TaskManager
 
 sessions: Sessions = Sessions()
+
 async def account_starter():
+    """
+    Стартует сессии для проверки подарков и покупки подарков.
+    После старта каждой сессии для покупки отправляет сообщение в указанный канал
+    с информацией о балансе и логикой покупки.
+    """
     account_starter_logger = get_logger("AccStarter")
     account_starter_logger.info(f"Starting checker sessions")
-    for session in sessions_for_checking:
-        is_sucessesfully_started = await sessions.add_session(
-            session_name_file=session,
+    # запускаем сессии для проверки наличия новых подарков
+    for session_name in sessions_for_checking:
+        is_successfully_started = await sessions.add_session(
+            session_name_file=session_name,
             is_checker=True,
             logger=account_starter_logger
         )
 
     account_starter_logger.info(f"Starting buyer sessions")
-    for config in send_config:
-        is_sucessesfully_started = await sessions.add_session(
-            session_name_file=config.session_name_send_from,
+    # запускаем сессии для покупки подарков
+    for cfg in send_config:
+        is_successfully_started = await sessions.add_session(
+            session_name_file=cfg.session_name_send_from,
             is_buying=True,
             logger=account_starter_logger
         )
+        # если сессия была успешно создана, отправляем приветственное сообщение в канал
+        try:
+            # получаем объект сессии
+            session_obj = next((s for s in sessions.available if s.name == cfg.session_name_send_from), None)
+            if session_obj and session_obj.cli:
+                # Формируем строку с диапазонами для покупки
+                filter_strings = []
+                for f in gift_filters:
+                    supply_start, supply_end = f.supply_range
+                    price_start, price_end = f.price_range
+                    # форматируем бесконечность
+                    supply_end_str = "∞" if supply_end == float('inf') else str(int(supply_end))
+                    price_end_str = "∞" if price_end == float('inf') else str(int(price_end))
+                    filter_strings.append(f"{int(price_start)}-{price_end_str} ({int(supply_start)}-{supply_end_str})")
+                # Собираем приветственное сообщение
+                stars_balance = session_obj.balance_available
+                message_lines = [
+                    "✅ Gifts Buyer Successfully Started",
+                    "",
+                    f"Your current balance: {stars_balance} ⭐",
+                    "",
+                    "📝 Gift purchase logic:",
+                    "According to your configured ranges:",
+                    "نوع و مقدار سفارش",
+                    "",
+                ]
+                for fs in filter_strings:
+                    message_lines.append(f"• {fs}")
+                message_lines.append("💡 Gifts outside the specified criteria will be automatically skipped")
+                # Соединяем строки
+                message_text = "\n".join(message_lines)
+                # отправляем сообщение в канал/пользователю
+                await session_obj.cli.send_message(cfg.username_send_to, message_text)
+        except Exception as e:
+            # если отправка не удалась, логируем, но продолжаем работу
+            account_starter_logger.exception(f"Failed to send start message for {cfg.session_name_send_from}: {e}", exc_info=True)
+
 
 class GiftFlashBuyer:
     def __init__(self):
@@ -62,10 +107,11 @@ class GiftFlashBuyer:
 
         buyer_logger.info(f"Trying to buy gift {GiftsCache.log_gift_string(gift)}")
 
+        # определяем получателя подарка/канал
         send_to = None
-        for config in send_config:
-            if session.name == config.session_name_send_from:
-                send_to = config.username_send_to
+        for cfg in send_config:
+            if session.name == cfg.session_name_send_from:
+                send_to = cfg.username_send_to
 
         attempts = 0
         max_attempts = 30
@@ -73,19 +119,44 @@ class GiftFlashBuyer:
             try:
                 await session.cli.send_gift(send_to, gift.id, is_private=True, text="gift from @kod4dusha")
                 buyer_logger.info(f"Gift {GiftsCache.log_gift_string(gift)} was buyed sucessfully")
+                # отправляем отчёт о покупке
+                try:
+                    await session.cli.send_message(send_to, f"✅ Gift purchased successfully:\n{GiftsCache.log_gift_string(gift)}")
+                except Exception as e_send:
+                    buyer_logger.exception(f"Failed to send purchase report: {e_send}", exc_info=True)
                 break
             except StargiftUsageLimited:
                 buyer_logger.exception(f"Oops, [{session.name} --> {send_to}] {GiftsCache.log_gift_string(gift)}: StargiftUsageLimited'", exc_info=True)
+                # отправляем отчёт об ошибке
+                try:
+                    await session.cli.send_message(send_to, f"⚠️ Cannot buy gift due to usage limit:\n{GiftsCache.log_gift_string(gift)}")
+                except Exception as e_send:
+                    buyer_logger.exception(f"Failed to send error report: {e_send}", exc_info=True)
                 break
             except FloodWait as e:
                 buyer_logger.exception(f"FloodWait Error, waiting for {e.value}sec", exc_info=True)
+                # отправляем отчёт о FloodWait
+                try:
+                    await session.cli.send_message(send_to, f"⏳ Flood wait {e.value} sec while buying gift:\n{GiftsCache.log_gift_string(gift)}")
+                except Exception as e_send:
+                    buyer_logger.exception(f"Failed to send flood wait report: {e_send}", exc_info=True)
                 await asyncio.sleep(e.value)
             except FormSubmitDuplicate:
                 wait_time = 0.3
                 buyer_logger.exception(f"FormSubmitDuplicate Error, waiting for {wait_time}sec", exc_info=True)
+                # отправляем отчёт о дублировании
+                try:
+                    await session.cli.send_message(send_to, f"⚠️ Duplicate form submission; retrying:\n{GiftsCache.log_gift_string(gift)}")
+                except Exception as e_send:
+                    buyer_logger.exception(f"Failed to send duplicate form report: {e_send}", exc_info=True)
                 await asyncio.sleep(wait_time)
             except Exception as e:
                 buyer_logger.exception("Unexcepted exception", exc_info=True)
+                # отправляем отчёт о неожиданных ошибках
+                try:
+                    await session.cli.send_message(send_to, f"❌ Unexpected error: {e} while buying gift:\n{GiftsCache.log_gift_string(gift)}")
+                except Exception as e_send:
+                    buyer_logger.exception(f"Failed to send unexpected error report: {e_send}", exc_info=True)
                 await asyncio.sleep(0.3)
 
         buyer_logger.info(f"[{session.name} --> {send_to}] done")
@@ -126,6 +197,7 @@ class GiftFlashBuyer:
 async def loop_infinite():
     head_logger = get_logger("Head")
 
+    # стартуем аккаунты
     await account_starter()
 
     while True:
