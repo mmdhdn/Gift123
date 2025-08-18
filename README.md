@@ -1,14 +1,16 @@
 # Telegram Gift Buyer
 
-High performance Telegram userbot that scans and buys gifts (Stars) automatically. Built with Python 3.11+, asyncio and Pyrogram.
+High-performance Telegram userbot that scans and buys Gifts (Stars) using **Telethon** and the latest **MTProto** methods. Runs on **Python 3.11+** with asyncio.
 
 ## Features
-- Multi account support
+- Real payments flow: `payments.GetStarGiftsRequest` → `payments.GetPaymentFormRequest` → `payments.SendStarsFormRequest`
+- Multi-account support
 - Configurable filters (price, supply, gift type)
-- Async scanning and purchasing
-- Simulation mode for safe testing
+- Async scanning and auto-purchase
+- Simulation mode (safe testing / dry run)
 - Structured logging and optional Telegram notifications
-- Typer based CLI
+- Typer-based CLI
+- Minimal runner for multi-recipient purchases
 
 ## Setup
 1. Copy `.env.example` to `.env` and fill `API_ID` and `API_HASH` from [my.telegram.org](https://my.telegram.org).
@@ -16,18 +18,3 @@ High performance Telegram userbot that scans and buys gifts (Stars) automaticall
 3. Install requirements:
    ```bash
    pip install -r requirements.txt
-   ```
-4. Login accounts:
-   ```bash
-   python -m tg_gift_buyer.cli login --account acc1
-   ```
-5. Start the bot:
-   ```bash
-   python -m tg_gift_buyer.cli start-bot
-   ```
-
-## Development
-Run tests with `pytest`.
-
-## Docker
-A simple Dockerfile is included for running the bot in a container.

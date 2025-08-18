@@ -1,50 +1,54 @@
-"""Data models used across the application."""
+"""Data models for star gifts and filters."""
 from __future__ import annotations
 
 from typing import List, Optional
 from pydantic import BaseModel, Field
 
 
-class Gift(BaseModel):
+class StarGiftModel(BaseModel):
     id: int
-    title: str
-    price: int
-    supply: int | None = None
-    remaining: int | None = None
-    gift_type: str = "limited"
-    published_by: Optional[str] = None
+    title: Optional[str] = None
+    stars: int
+    limited: bool
+    sold_out: bool
+    availability_remains: Optional[int] = None
+    availability_total: Optional[int] = None
+    rarity: Optional[str] = None
+    premium_required: Optional[bool] = None
+    type: str  # "limited" | "unlimited"
+
+    @classmethod
+    def from_telethon(cls, gift) -> "StarGiftModel":
+        limited = bool(getattr(gift, "availability_total", None))
+        remaining = getattr(gift, "availability_remains", None)
+        sold_out = bool(limited and remaining == 0)
+        return cls(
+            id=getattr(gift, "id"),
+            title=getattr(gift, "title", None),
+            stars=getattr(gift, "stars", 0),
+            limited=limited,
+            sold_out=sold_out,
+            availability_remains=remaining,
+            availability_total=getattr(gift, "availability_total", None),
+            rarity=getattr(gift, "rarity", None),
+            premium_required=getattr(gift, "premium", None),
+            type="limited" if limited else "unlimited",
+        )
 
 
-class PurchaseResult(BaseModel):
-    gift_id: int
-    amount: int
-    recipient: str
-    success: bool
-    message: str
-
-
-class FilterBlock(BaseModel):
+class GiftFilter(BaseModel):
     min_price: int = 0
     max_price: int | float = float("inf")
     min_supply: int = 0
     max_supply: int | float = float("inf")
-    amount: int = 1
-    published_by: List[str] = Field(default_factory=list)
-    gift_types: List[str] = Field(default_factory=lambda: ["limited", "unlimited", "premium"])
-
-    def matches(self, gift: Gift) -> bool:
-        if gift.price < self.min_price or gift.price > self.max_price:
-            return False
-        if gift.supply is not None:
-            if gift.supply < self.min_supply:
-                return False
-            if isinstance(self.max_supply, (int, float)) and gift.supply > self.max_supply:
-                return False
-        if self.published_by and gift.published_by not in self.published_by:
-            return False
-        if self.gift_types and gift.gift_type not in self.gift_types:
-            return False
-        return True
+    gift_types: List[str] = Field(default_factory=lambda: ["limited", "unlimited"])
 
 
-__all__ = ["Gift", "FilterBlock", "PurchaseResult"]
+class PurchaseResult(BaseModel):
+    gift_id: int
+    recipient: str
+    success: bool
+    message: str = ""
+
+
+__all__ = ["StarGiftModel", "GiftFilter", "PurchaseResult"]

@@ -5,9 +5,9 @@ import asyncio
 import logging
 from typing import Callable, Iterable, Set
 
-from .models import Gift, FilterBlock
+from .models import StarGiftModel, GiftFilter
 from .filters import gift_matches
-from .mtproto import MTProtoClient
+from . import mtproto
 
 logger = logging.getLogger(__name__)
 
@@ -15,16 +15,17 @@ logger = logging.getLogger(__name__)
 class GiftScanner:
     def __init__(
         self,
-        api: MTProtoClient,
+        client,
         interval: int,
-        filters: Iterable[FilterBlock],
-        on_gift: Callable[[Gift], asyncio.Future | None],
+        filters: Iterable[GiftFilter],
+        on_gift: Callable[[StarGiftModel], asyncio.Future | None],
     ) -> None:
-        self.api = api
+        self.client = client
         self.interval = interval
         self.filters = list(filters)
         self.on_gift = on_gift
         self._seen: Set[int] = set()
+        self._hash = 0
         self._task: asyncio.Task | None = None
         self._stopped = asyncio.Event()
 
@@ -43,12 +44,13 @@ class GiftScanner:
         logger.info("scanner started")
         while not self._stopped.is_set():
             try:
-                gifts_raw = await self.api.list_gifts()
-                gifts = [Gift(**g) for g in gifts_raw]
-                for gift in gifts:
-                    if gift.id in self._seen:
+                self._hash, gifts_raw = await mtproto.list_gifts(self.client, self._hash)
+                for g in gifts_raw:
+                    gid = getattr(g, "id", None)
+                    if gid is None or gid in self._seen:
                         continue
-                    self._seen.add(gift.id)
+                    self._seen.add(gid)
+                    gift = StarGiftModel.from_telethon(g)
                     if gift_matches(gift, self.filters):
                         logger.debug("gift matched: %s", gift)
                         res = self.on_gift(gift)
