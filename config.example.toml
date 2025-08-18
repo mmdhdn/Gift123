@@ -1,0 +1,14 @@
+poll_interval_secs = 2
+simulation = false
+sessions_for_checking = ["account1"]
+
+[[send_config]]
+session_name_send_from = "account1"
+username_send_to = "@target_user"
+
+[[gift_filters]]
+min_price = 0
+max_price = "inf"
+min_supply = 0
+max_supply = "inf"
+gift_types = ["limited", "unlimited"]
