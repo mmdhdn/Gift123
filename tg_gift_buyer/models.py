@@ -15,7 +15,7 @@ class StarGiftModel(BaseModel):
     availability_total: Optional[int] = None
     rarity: Optional[str] = None
     premium_required: Optional[bool] = None
-    type: str
+    type: str  # "limited" | "unlimited"
 
     @classmethod
     def from_telethon(cls, gift) -> "StarGiftModel":

@@ -20,10 +20,16 @@ except Exception:  # pragma: no cover - provide minimal stubs
 
     class types:  # type: ignore
         class StarGift:
-            def __init__(self, id: int, title: str | None = None, stars: int = 0,
-                         availability_total: int | None = None,
-                         availability_remains: int | None = None,
-                         rarity: str | None = None, premium: bool | None = None) -> None:
+            def __init__(
+                self,
+                id: int,
+                title: str | None = None,
+                stars: int = 0,
+                availability_total: int | None = None,
+                availability_remains: int | None = None,
+                rarity: str | None = None,
+                premium: bool | None = None,
+            ) -> None:
                 self.id = id
                 self.title = title
                 self.stars = stars
@@ -46,9 +52,13 @@ except Exception:  # pragma: no cover - provide minimal stubs
                 self.entities = entities or []
 
         class InputInvoiceStarGift:
-            def __init__(self, user_id: "types.InputUser", gift_id: int,
-                         hide_name: bool = False,
-                         message: Optional["types.TextWithEntities"] = None) -> None:
+            def __init__(
+                self,
+                user_id: "types.InputUser",
+                gift_id: int,
+                hide_name: bool = False,
+                message: Optional["types.TextWithEntities"] = None,
+            ) -> None:
                 self.user_id = user_id
                 self.gift_id = gift_id
                 self.hide_name = hide_name
@@ -104,7 +114,9 @@ async def buy_star_gift(
     hide_name: bool = False,
     message_entities: Optional[types.TextWithEntities] = None,
 ):
-    """Buy a star gift for the recipient."""
+    """Buy a star gift for the recipient via:
+       InputInvoiceStarGift -> payments.getPaymentForm -> payments.sendStarsForm.
+    """
     invoice = types.InputInvoiceStarGift(
         user_id=recipient,
         gift_id=int(gift_id),
@@ -115,14 +127,19 @@ async def buy_star_gift(
         form = await client(functions.payments.GetPaymentFormRequest(invoice=invoice))
         try:
             result = await client(
-                functions.payments.SendStarsFormRequest(form_id=getattr(form, "form_id", 0), invoice=invoice)
+                functions.payments.SendStarsFormRequest(
+                    form_id=getattr(form, "form_id", 0), invoice=invoice
+                )
             )
             return result
         except errors.RPCError as e:
+            # If payment form expired, fetch a fresh one and retry once.
             if "FORM_EXPIRED" in str(e):
                 form = await client(functions.payments.GetPaymentFormRequest(invoice=invoice))
                 result = await client(
-                    functions.payments.SendStarsFormRequest(form_id=getattr(form, "form_id", 0), invoice=invoice)
+                    functions.payments.SendStarsFormRequest(
+                        form_id=getattr(form, "form_id", 0), invoice=invoice
+                    )
                 )
                 return result
             raise GiftApiError(f"sendStarsForm failed: {e}")

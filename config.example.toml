@@ -1,11 +1,19 @@
+# Global
 poll_interval_secs = 2
 simulation = false
+log_level = "INFO"
+# optional: if you want logs also sent to a Telegram channel/pm via a notifier
+log_telegram_channel = "@your_log_channel"
+
+# Sessions used for scanning the gifts catalog
 sessions_for_checking = ["account1"]
 
+# From which session to buy and to whom to send (recipient must be a USER)
 [[send_config]]
 session_name_send_from = "account1"
 username_send_to = "@target_user"
 
+# Gift filters (you can have multiple blocks; OR logic)
 [[gift_filters]]
 min_price = 0
 max_price = "inf"

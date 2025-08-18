@@ -1,7 +1,12 @@
 telethon>=1.36
+pyrogram>=2.0
+pydantic>=2.0
 tenacity>=8.0
 rich>=13.0
-tomli>=2.0
 python-dotenv>=1.0
-uvloop>=0.17
+tomli>=2.0 ; python_version < "3.11"
+uvloop>=0.17 ; sys_platform == "linux"
+aiofiles>=23.0
+httpx>=0.24
+typer>=0.9
 pytest>=7.4

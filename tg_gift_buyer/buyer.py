@@ -36,5 +36,15 @@ class GiftBuyer:
                     logger.info("Bought gift %s for %s", gift.id, recipient)
                 except Exception as e:  # pragma: no cover - network error
                     logger.error("Failed to buy gift %s for %s: %s", gift.id, recipient, e)
-                    return PurchaseResult(gift_id=gift.id, recipient=recipient, success=False, message=str(e))
-        return PurchaseResult(gift_id=gift.id, recipient=",".join(self.recipients), success=True, message="ok")
+                    return PurchaseResult(
+                        gift_id=gift.id,
+                        recipient=recipient,
+                        success=False,
+                        message=str(e),
+                    )
+        return PurchaseResult(
+            gift_id=gift.id,
+            recipient=",".join(self.recipients),
+            success=True,
+            message="ok",
+        )

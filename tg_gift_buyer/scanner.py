@@ -46,9 +46,10 @@ class GiftScanner:
             try:
                 self._hash, gifts_raw = await mtproto.list_gifts(self.client, self._hash)
                 for g in gifts_raw:
-                    if g.id in self._seen:
+                    gid = getattr(g, "id", None)
+                    if gid is None or gid in self._seen:
                         continue
-                    self._seen.add(g.id)
+                    self._seen.add(gid)
                     gift = StarGiftModel.from_telethon(g)
                     if gift_matches(gift, self.filters):
                         logger.debug("gift matched: %s", gift)
