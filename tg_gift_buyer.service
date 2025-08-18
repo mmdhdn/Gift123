@@ -1,0 +1,13 @@
+[Unit]
+Description=Telegram Gift Buyer
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/tg_gift_buyer
+EnvironmentFile=/opt/tg_gift_buyer/.env
+ExecStart=/usr/bin/python -m tg_gift_buyer.cli start-bot
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,35 @@
+# Global
+poll_interval_secs = 2
+simulation = false
+log_level = "INFO"
+log_telegram_channel = "@your_log_channel"
+
+[defaults]
+min_price = 0
+max_price = 999999999
+min_supply = 0
+max_supply = 999999999
+amount = 1
+published_by = []
+gift_types = ["limited", "unlimited", "premium"]
+
+[[accounts]]
+name = "acc1"
+phone = "+123456789"
+scan_interval_secs = 2
+spend_cap_stars = 5000
+recipients = ["@user1", "@channel_or_username"]
+[accounts.filters]
+min_price = 100
+max_price = 2000
+min_supply = 0
+max_supply = 5000
+amount = 2
+published_by = []
+gift_types = ["limited", "premium"]
+
+[[accounts]]
+name = "acc2"
+scan_interval_secs = 3
+spend_cap_stars = 10000
+recipients = ["@user2"]
