@@ -10,7 +10,13 @@ def test_list_gifts():
     class FakeClient:
         async def __call__(self, request):
             assert isinstance(request, mtproto.functions.payments.GetStarGiftsRequest)
-            return SimpleNamespace(hash=123, gifts=[mtproto.types.StarGift(id=1, stars=5)])
+            gift = mtproto.types.StarGift(
+                id=1,
+                sticker=None,
+                stars=5,
+                convert_stars=5,
+            )
+            return SimpleNamespace(hash=123, gifts=[gift])
 
     client = FakeClient()
     new_hash, gifts = asyncio.run(mtproto.list_gifts(client, 0))
@@ -54,7 +60,7 @@ def test_buy_star_gift_retries_form_expired():
             if isinstance(request, mtproto.functions.payments.SendStarsFormRequest):
                 self.send_calls += 1
                 if self.send_calls == 1:
-                    raise mtproto.errors.RPCError("FORM_EXPIRED")
+                    raise mtproto.errors.RPCError(None, "FORM_EXPIRED")
                 return SimpleNamespace(ok=True)
             raise AssertionError
 

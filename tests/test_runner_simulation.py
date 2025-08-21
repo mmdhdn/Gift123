@@ -8,7 +8,14 @@ from tg_gift_buyer.models import GiftFilter
 
 def test_simulation_does_not_buy(monkeypatch, caplog):
     async def fake_list_gifts(client, last_hash):
-        gift = mtproto.types.StarGift(id=1, stars=5, availability_total=10, availability_remains=5)
+        gift = mtproto.types.StarGift(
+            id=1,
+            sticker=None,
+            stars=5,
+            convert_stars=5,
+            availability_total=10,
+            availability_remains=5,
+        )
         return 1, [gift]
 
     async def fake_buy(*args, **kwargs):

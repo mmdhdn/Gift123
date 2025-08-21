@@ -2,6 +2,8 @@
 poll_interval_secs = 2
 simulation = false
 log_level = "INFO"
+# whether to skip gifts when account balance is lower than price
+skip_on_low_balance = true
 # optional: if you want logs also sent to a Telegram channel/pm via a notifier
 log_telegram_channel = "@your_log_channel"
 

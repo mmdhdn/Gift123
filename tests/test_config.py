@@ -28,3 +28,4 @@ recipients = ["@u"]
     cfg = Config.load(cfg_file)
     assert cfg.poll_interval_secs == 2
     assert cfg.accounts[0].name == "a1"
+    assert cfg.skip_on_low_balance is True

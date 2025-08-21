@@ -118,7 +118,7 @@ async def buy_star_gift(
        InputInvoiceStarGift -> payments.getPaymentForm -> payments.sendStarsForm.
     """
     invoice = types.InputInvoiceStarGift(
-        user_id=recipient,
+        peer=recipient,
         gift_id=int(gift_id),
         hide_name=hide_name,
         message=message_entities,
@@ -142,6 +142,11 @@ async def buy_star_gift(
                     )
                 )
                 return result
+            name = e.__class__.__name__.upper()
+            msg = str(e).upper()
+            if "BALANCE" in name and "LOW" in name or "BALANCE_TOO_LOW" in msg:
+                # Propagate balance related errors so callers can skip gracefully.
+                raise e
             raise GiftApiError(f"sendStarsForm failed: {e}")
     except errors.FloodWaitError:  # pragma: no cover - caller should handle
         raise
