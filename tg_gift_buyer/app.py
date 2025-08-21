@@ -27,7 +27,12 @@ async def start(config_path: Path, api_id: int, api_hash: str) -> List[GiftScann
         mt = MTProtoClient(client)
         filt_cfg = acc_cfg.filters or config.defaults
         filter_block = FilterBlock(**filt_cfg.model_dump())
-        buyer = GiftBuyer(mt, acc_cfg.recipients, simulation=config.simulation)
+        buyer = GiftBuyer(
+            mt,
+            acc_cfg.recipients,
+            simulation=config.simulation,
+            skip_on_low_balance=config.skip_on_low_balance,
+        )
         scanner = GiftScanner(
             mt,
             acc_cfg.scan_interval_secs,

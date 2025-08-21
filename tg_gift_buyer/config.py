@@ -31,13 +31,22 @@ class Config(BaseModel):
     simulation: bool = False
     log_level: str = "INFO"
     log_telegram_channel: Optional[str] = None
+    skip_on_low_balance: bool = True
     defaults: FilterConfig = Field(default_factory=FilterConfig)
     accounts: List[AccountConfig] = Field(default_factory=list)
 
     @classmethod
     def load(cls, path: Path) -> "Config":
         data = tomllib.loads(path.read_text())
-        return cls.model_validate(data)
+        cfg = cls.model_validate(data)
+        # Manually instantiate nested models because our simplified BaseModel
+        # does not handle automatic conversion.
+        if isinstance(cfg.defaults, dict):
+            cfg.defaults = FilterConfig(**cfg.defaults)
+        cfg.accounts = [
+            AccountConfig(**a) if isinstance(a, dict) else a for a in cfg.accounts
+        ]
+        return cfg
 
 
 __all__ = ["Config", "FilterConfig", "AccountConfig"]

@@ -12,6 +12,7 @@ sleep_checking_seconds = config["sleep_checking_seconds"]
 is_test_mode = config["is_test_mode"]
 test_mode_max_balance = config["test_mode_max_balance"]
 is_infinite_buying = config["is_infinite_buying"]
+skip_on_low_balance = config.get("skip_on_low_balance", True)
 
 # Обрабатываем gift_filters с преобразованием 'inf' в float('inf')
 gift_filters = [
